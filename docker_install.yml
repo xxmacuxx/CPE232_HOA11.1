@@ -1,0 +1,58 @@
+---
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: Docker Installation
+    shell:
+      sudo apt-get install docker -y
+
+  - name: Docker sdk Installation
+    shell:
+      pip install docker-py
+
+  - name: Docker Enable
+    service:
+      name: docker
+      state: started
+      enabled: true
+
+  - name: Docker Group Add
+    shell:
+      usermod -aG docker jai
+
+  - name: Docker Service Restart
+    service:
+     name: docker
+     state: restarted
+     enabled: true
+
+  - name: Build Directory Making
+    file:
+      path: ./root/demo-dockerfile
+      state: directory
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: Docker Copy
+    copy:
+      src: ./dockerfile
+      dest: ./root/demo-dockerfile/dockerfile
+      owner: root
+      group: root
+      mode: '0755'
+
+  - name: Docker Building
+    docker_image:
+      name: containeransible
+      build:
+        path: ./root/demo-dockerfile
+        args:
+          listen_port: 8080
+      state: present
+      source: build
+
+  - name: Containerized App accesibility
+    shell:
+      docker run -it -d -p 8080:80 containeransible
